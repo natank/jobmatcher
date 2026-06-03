@@ -1,10 +1,11 @@
 # JobMatcher
 ## AI-Powered Job Search SaaS
-### Product Requirements Document | v0.1
+### Product Requirements Document | v0.2
 
 | Version | Status | Owner | Date |
 |---------|--------|-------|------|
-| v0.1 | Draft | Natan | May 2026 |
+| v0.1 | Superseded | Natan | May 2026 |
+| v0.2 | Active | Natan | Jun 2026 |
 
 ---
 
@@ -82,8 +83,8 @@ JobMatcher is a SaaS platform that automates the end-to-end job search workflow.
 - Component library: shadcn/ui
 
 ### Backend
-- Node.js + Express (or Next.js API routes)
-- GitHub OAuth via Passport.js / NextAuth
+- Next.js 14 API routes (App Router route handlers + server actions)
+- GitHub OAuth via **Supabase Auth (GitHub provider)** — locked in v0.2
 - GitHub REST API v3 for repo/commit ingestion
 
 ### AI Layer
@@ -139,21 +140,77 @@ All AI features are powered by context-rich prompts. Engineering documents (this
 
 ---
 
-## 9. Open Questions
+## 9. Locked Decisions (v0.2)
 
-- GitHub private repos — do we request private access or public only?
-- Resume export format — PDF only, or also DOCX?
-- Interview session length — fixed number of questions or time-boxed?
-- Onboarding flow — GitHub-first or allow manual resume upload as alternative entry?
-- Multi-language support — English-only MVP or Hebrew from day one?
+All open questions from v0.1 are resolved for MVP:
+
+| Decision | Resolution | Deferred |
+|----------|-----------|---------|
+| GitHub repo access | **Public repos only** (scopes: `read:user`, `user:email`, `public_repo`) | Private opt-in post-MVP |
+| Resume export format | **PDF only** (server-rendered from schema) | DOCX in v1.1 |
+| Interview session length | **Fixed 5 questions** (2 technical, 2 job-req, 1 behavioral) | Variable length post-MVP |
+| Onboarding flow | **GitHub-first** | Manual paste entry post-MVP |
+| Language support | **English-only** | Hebrew in v1.1 |
+| Auth library | **Supabase Auth with GitHub OAuth provider** | — |
 
 ---
 
-## 10. Next Steps
+## 10. Non-Functional Requirements
 
-1. Write GitHub Ingestion Spec (data model, API scope, edge cases)
-2. Write Resume Schema Spec (sections, fields, AI generation rules)
-3. Write Interview Engine Spec (question types, scoring rubric)
-4. Design Supabase schema based on above specs
-5. Bootstrap Next.js project with GitHub OAuth
-6. Build GitHub ingestion module + first resume generation prompt
+| NFR | MVP Target |
+|-----|-----------|
+| API latency (non-AI) | p95 < 400 ms |
+| AI feature latency | p95 < 12 s |
+| Availability | 99% (best-effort) |
+| AI timeout | 30 s, 1 retry |
+| Max job text input | 12 KB |
+| Max interview answer | 4 KB |
+| Token budget per call | Enforced per-feature (see specs) |
+| Data deletion | Full user purge within request |
+
+---
+
+## 11. Privacy & Compliance
+
+- Explicit consent screen before first GitHub ingestion.
+- GitHub data (including README/commit text) is stored only as user's own public content.
+- All user data encrypted at rest (Supabase default + `access_token` app-layer encryption).
+- "Delete my data" purges all user-keyed rows and storage objects.
+- Privacy policy must disclose third-party LLM (Anthropic) processing user content.
+- English-only MVP eliminates immediate GDPR translation obligation.
+
+---
+
+## 12. Success Metrics (North Star)
+
+**North Star**: % of new users who complete the full core flow (GitHub connect → resume generated → job pasted → interview completed) within first session.
+
+| Metric | Target (90 days post-launch) |
+|--------|------------------------------|
+| Core flow completion rate | ≥ 25% of signups |
+| Resume generation success rate | ≥ 90% (no schema validation failure) |
+| Mock interview completion rate | ≥ 60% of started sessions |
+| Free → Pro conversion | ≥ 5% |
+| AI error rate (timeout/schema fail) | < 5% |
+
+---
+
+## 13. AI Cost & Safety
+
+- Single `lib/ai/client.ts` wrapper: enforces token budget, temperature, timeout, and 1 retry per call.
+- Temperature: ≤ 0.2 for scoring/parsing; ~0.5 for question/resume generation.
+- Grounding rules in resume prompts prevent hallucinated skills/metrics (evidence-linked schema).
+- Per-user monthly usage counters enforce free-tier limits before any AI call.
+- Model fallback to cheaper variant on non-critical calls (job parsing) if cost threshold exceeded.
+
+---
+
+## 14. Next Steps (v0.2)
+
+Specs and architecture are complete (see `docs/`). Build order follows milestones in `docs/09-development-plan.md`:
+
+1. **M0** — Bootstrap repo: Next.js 14 + Supabase + Auth + CI/CD (GitHub Actions) + Vercel
+2. **M1** — GitHub ingestion → Resume generation + editor + PDF export
+3. **M2** — Job ingestion → Fit score → Resume tailoring
+4. **M3** — Mock interview → per-answer feedback → summary report
+5. **M4** — Usage limits, cost controls, analytics, privacy/delete, observability
