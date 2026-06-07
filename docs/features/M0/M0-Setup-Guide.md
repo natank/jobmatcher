@@ -1,5 +1,12 @@
 # M0 External Setup Guide
 
+## Applicable documents
+
+- M0 Kickoff: M0-Kickoff.md
+- M0 Development Plan: 09-development-plan.md
+
+## Setup Steps
+
 Follow these steps after the code scaffold is committed.
 
 ---
@@ -38,7 +45,33 @@ supabase db push
 
 ---
 
-## 3. Create a GitHub OAuth App
+## 3. Create an Anthropic API key
+
+1. Go to [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys).
+2. Click **Create Key**.
+3. Note the key (starts with `sk-ant-...`).
+4. Save it securely — you'll use it in step 4.
+
+### Configure the Anthropic key
+
+Add the key to both local and production environments:
+
+**Local:**
+
+- Add to `.env.local` as `ANTHROPIC_API_KEY=<your-key>` (step 4).
+
+**Vercel:**
+
+- In Vercel project → _Settings → Environment Variables_, add `ANTHROPIC_API_KEY` with the same value.
+- Redeploy to apply.
+
+**GitHub Actions:**
+
+- In GitHub repo → _Settings → Secrets and variables → Actions_, add `ANTHROPIC_API_KEY` (step 7).
+
+---
+
+## 4. Create a GitHub OAuth App
 
 1. Go to [https://github.com/settings/developers](https://github.com/settings/developers) → **New OAuth App**.
 2. Fill in:
@@ -51,7 +84,7 @@ supabase db push
 
 ---
 
-## 4. Configure environment variables
+## 5. Configure environment variables
 
 ```bash
 cp .env.example .env.local
@@ -71,7 +104,7 @@ APP_URL=http://localhost:3000
 
 ---
 
-## 5. Run locally
+## 6. Run locally
 
 ```bash
 pnpm dev
@@ -82,7 +115,7 @@ Test the login flow: click _Continue with GitHub_ → authorize → should redir
 
 ---
 
-## 6. Connect Vercel
+## 7. Connect Vercel
 
 1. Go to [https://vercel.com/new](https://vercel.com/new) → import this GitHub repo.
 2. Framework preset: **Next.js** (auto-detected).
@@ -93,7 +126,7 @@ Test the login flow: click _Continue with GitHub_ → authorize → should redir
 
 ---
 
-## 7. Add GitHub Actions secrets
+## 8. Add GitHub Actions secrets
 
 In your GitHub repo → _Settings → Secrets and variables → Actions_, add:
 
@@ -103,11 +136,12 @@ In your GitHub repo → _Settings → Secrets and variables → Actions_, add:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase publishable key (anon key)                                                                 |
 | `SUPABASE_ACCESS_TOKEN`         | From [https://supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) |
 | `SUPABASE_DB_PASSWORD`          | Your Supabase database password (set during project creation)                                       |
+| `ANTHROPIC_API_KEY`             | Your Anthropic API key from step 3                                                                  |
 | `APP_URL`                       | Your production Vercel URL                                                                          |
 
 ---
 
-## 8. M0 exit criteria verification
+## 9. M0 exit criteria verification
 
 - [ ] `pnpm dev` runs without errors
 - [ ] Login with GitHub works end-to-end → `/dashboard` loads
@@ -116,3 +150,4 @@ In your GitHub repo → _Settings → Secrets and variables → Actions_, add:
 - [ ] CI workflow passes on a PR
 - [ ] `supabase db push` applies migrations without errors
 - [ ] Vercel preview deploy works on a PR
+- [ ] `ANTHROPIC_API_KEY` configured in `.env.local`, Vercel, and GitHub Actions
