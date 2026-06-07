@@ -36,6 +36,16 @@ supabase db push
 3. Paste the **Client ID** and **Client Secret** from step 3 below.
 4. Copy the **Callback URL** shown (it looks like `https://<ref>.supabase.co/auth/v1/callback`) — you'll need it for GitHub.
 
+### Configure Supabase URL settings
+
+1. Go to _Authentication → URL Configuration_.
+2. Set **Site URL** to your production domain (e.g. `https://jobmatcher-two.vercel.app`).
+3. Under **Redirect URLs**, add:
+   - `https://<your-vercel-domain>/auth/callback`
+   - `http://localhost:3000/auth/callback` (for local dev)
+
+> **Why this matters:** Supabase enforces an allowlist of redirect URLs as a security measure. If `redirectTo` in the app isn't in this list, Supabase falls back to the Site URL and ignores the requested redirect.
+
 ---
 
 ## 3. Create a GitHub OAuth App
@@ -63,8 +73,8 @@ Fill in `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable-key>
 SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
-GITHUB_OAUTH_CLIENT_ID=Ov23liS925ed7M0kaB2R
-GITHUB_OAUTH_CLIENT_SECRET=dafd707277bf382695288f54b619c52ee69e8df6
+GITHUB_OAUTH_CLIENT_ID=<github-client-id>
+GITHUB_OAUTH_CLIENT_SECRET=<github-client-secret>
 ANTHROPIC_API_KEY=<your-anthropic-key>
 APP_URL=http://localhost:3000
 ```
@@ -84,12 +94,14 @@ Test the login flow: click _Continue with GitHub_ → authorize → should redir
 
 ## 6. Connect Vercel
 
-1. Go to [https://vercel.com/new](https://vercel.com/new) → import this GitHub repo.
-2. Framework preset: **Next.js** (auto-detected).
-3. Add all env vars from `.env.local` under _Settings → Environment Variables_.
-   - For **production**, update `APP_URL` to your Vercel domain (e.g. `https://jobmatcher.vercel.app`).
-   - Also update the GitHub OAuth App _Homepage URL_ and _callback URL_ to the production domain.
-4. Deploy.
+1. Push all code to GitHub **before** importing to Vercel (Vercel detects the framework from the repo contents).
+2. Go to [https://vercel.com/new](https://vercel.com/new) → import this GitHub repo.
+3. Framework preset: **Next.js** (auto-detected). If it shows "Other", set it manually under _Settings → Build and Deployment_.
+4. Leave **Root Directory** empty.
+5. Add all env vars from `.env.local` under _Settings → Environment Variables_ — set `APP_URL` to your Vercel domain.
+6. Deploy.
+
+> **Note:** If framework is not detected, go to _Settings → Build and Deployment_ → set Framework Preset to **Next.js** → save → redeploy.
 
 ---
 
