@@ -21,7 +21,7 @@ export interface CallClaudeOptions<T> {
 }
 
 const TIMEOUT_MS = 30_000;
-const MODEL = "claude-3-5-sonnet-20240620";
+const MODEL = "claude-sonnet-4-5";
 
 function isTransientError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
