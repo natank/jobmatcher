@@ -62,7 +62,7 @@ async function githubFetch<T>(url: string, token: string, cache?: ETagCache): Pr
     return cached.data;
   }
 
-  if (res.status === 404) {
+  if (res.status === 404 || res.status === 409) {
     return null;
   }
 
