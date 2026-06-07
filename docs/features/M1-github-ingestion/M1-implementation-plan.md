@@ -2,6 +2,10 @@
 
 > M1 exit criteria (from `09-development-plan.md`): User can produce a grounded resume from their GitHub profile.
 
+## Applicable Documents
+
+1. M1 feature kickoff: `docs/features/M1-github-ingestion/M1-feature-kickoff.md`
+
 ## Scope
 
 GitHub OAuth ingestion + signal scoring + resume generation + resume editor + PDF export.
