@@ -1,8 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { TypedSupabaseClient } from "@/lib/db/client";
 import type { Database } from "@/types/database";
 import type { ResumeContent } from "@/types/resume";
 
-type Supabase = SupabaseClient<Database>;
+type Supabase = TypedSupabaseClient;
 export type ResumeRow = Database["public"]["Tables"]["resumes"]["Row"];
 
 export async function createResume(

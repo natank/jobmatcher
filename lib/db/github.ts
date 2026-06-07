@@ -1,8 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { TypedSupabaseClient } from "@/lib/db/client";
 import type { Database } from "@/types/database";
 import { GitHubProfileSchema, type GitHubProfile } from "@/types/github";
 
-type Supabase = SupabaseClient<Database>;
+type Supabase = TypedSupabaseClient;
 
 export async function getGitHubProfile(
   supabase: Supabase,

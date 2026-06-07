@@ -25,6 +25,8 @@ export function createSupabaseServerClient() {
   );
 }
 
+export type TypedSupabaseClient = ReturnType<typeof createSupabaseServerClient>;
+
 /**
  * Server-side Supabase admin client using the service role key.
  * NEVER expose to the client. Use only in trusted server contexts.
