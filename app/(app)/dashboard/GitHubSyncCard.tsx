@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Github, RefreshCw, Loader2, AlertCircle, CheckCircle2, X, Code2 } from "lucide-react";
 import type { GitHubProfile } from "@/types/github";
@@ -20,6 +21,7 @@ function formatDate(iso: string): string {
 }
 
 export function GitHubSyncCard({ initialProfile }: GitHubSyncCardProps) {
+  const router = useRouter();
   const [profile, setProfile] = useState<GitHubProfile | null>(initialProfile);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,12 +44,13 @@ export function GitHubSyncCard({ initialProfile }: GitHubSyncCardProps) {
       }
       const { profile: fresh } = (await res.json()) as { profile: GitHubProfile };
       setProfile(fresh);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync failed");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const handleSyncClick = () => {
     if (!profile) {
