@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth/actions";
-import { signOut } from "@/lib/auth/actions";
+import { getUser, signOut } from "@/lib/auth/actions";
+import { createSupabaseServerClient } from "@/lib/db/client";
+import { getGitHubProfile } from "@/lib/db/github";
+import { listResumes } from "@/lib/db/resume";
 import { Github, LogOut } from "lucide-react";
+import { GitHubSyncCard } from "./GitHubSyncCard";
+import { ResumeCard } from "./ResumeCard";
 
 export default async function DashboardPage() {
   const user = await getUser();
@@ -12,13 +16,17 @@ export default async function DashboardPage() {
 
   const displayName = user.user_metadata?.full_name ?? user.user_metadata?.user_name ?? user.email;
 
+  const supabase = createSupabaseServerClient();
+  const [profile, resumes] = await Promise.all([
+    getGitHubProfile(supabase, user.id).catch(() => null),
+    listResumes(supabase, user.id).catch(() => []),
+  ]);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-slate-900">JobMatcher</span>
-          </div>
+          <span className="text-lg font-bold text-slate-900">JobMatcher</span>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <Github className="h-4 w-4" />
@@ -37,14 +45,17 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-12">
-        <h1 className="text-2xl font-bold text-slate-900">Welcome, {displayName}!</h1>
-        <p className="mt-2 text-slate-500">Your workspace is ready. More features coming in M1.</p>
-
-        <div className="mt-8 rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
-          <p className="text-sm text-slate-400">
-            GitHub ingestion, resume generation, and job matching will appear here.
+      <main className="mx-auto max-w-5xl px-6 py-10">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">Welcome, {displayName}!</h1>
+          <p className="mt-1 text-slate-500">
+            Sync your GitHub profile and generate a tailored resume.
           </p>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2">
+          <GitHubSyncCard initialProfile={profile} />
+          <ResumeCard initialResumes={resumes} hasProfile={profile !== null} />
         </div>
       </main>
     </div>
