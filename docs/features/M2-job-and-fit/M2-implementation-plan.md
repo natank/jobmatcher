@@ -112,7 +112,7 @@ Pure TypeScript library code — no routes, no UI. Dependency of all subsequent 
 
 ---
 
-### PR 4 — Resume Tailoring Route + Prompt
+### PR 4 — Resume Tailoring Route + Prompt **COMPLETE**
 
 **Steps:** 8 (resume tailoring)
 
@@ -128,7 +128,7 @@ Pure TypeScript library code — no routes, no UI. Dependency of all subsequent 
 
 ---
 
-### PR 5 — Job & Fit UI
+### PR 5 — Job & Fit UI **COMPLETE**
 
 **Steps:** 9 (UI pages)
 
