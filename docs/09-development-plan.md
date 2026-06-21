@@ -6,13 +6,13 @@
 
 _Last updated: 2026-06-19_
 
-| Phase                | Status          |
-| -------------------- | --------------- |
-| M0 — Foundation      | **Complete**    |
-| M1 — GitHub → Resume | **Complete**    |
-| M2 — Job & Fit       | **Complete**    |
-| M3 — Interview       | **In progress** |
-| M4 — Hardening       | Not started     |
+| Phase                | Status       |
+| -------------------- | ------------ |
+| M0 — Foundation      | **Complete** |
+| M1 — GitHub → Resume | **Complete** |
+| M2 — Job & Fit       | **Complete** |
+| M3 — Interview       | **Complete** |
+| M4 — Hardening       | Not started  |
 
 ## 1. Tech Stack (confirmed)
 
@@ -151,8 +151,8 @@ Still to implement (M2+):
 | -------------------- | --------------------------------------------------------------------- | ----------------------------------------- | ----------- |
 | M0 — Foundation      | Repo, CI, Supabase schema + RLS, auth, env                            | Login works, CI green, migrations apply   | **Done**    |
 | M1 — GitHub → Resume | Ingestion + signal scoring + resume generate + editor + PDF           | User can produce a grounded resume        | **Done**    |
-| M2 — Job & Fit       | Job ingestion + fit score + tailoring                                 | Paste job → score + tailored resume       | Not started |
-| M3 — Interview       | Mock interview + per-answer feedback + summary                        | Complete a 5-question session with report | Not started |
+| M2 — Job & Fit       | Job ingestion + fit score + tailoring                                 | Paste job → score + tailored resume       | **Done**    |
+| M3 — Interview       | Mock interview + per-answer feedback + summary                        | Complete a 5-question session with report | **Done**    |
 | M4 — Hardening       | Usage limits, cost controls, analytics, privacy/delete, observability | NFRs met, billing tiers gated             | Not started |
 
 ### M0 — Foundation (Done)

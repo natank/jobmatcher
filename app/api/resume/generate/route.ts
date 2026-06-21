@@ -6,6 +6,8 @@ import { getGitHubProfile } from "@/lib/db/github";
 import { createResume } from "@/lib/db/resume";
 import { callClaude, AIValidationError } from "@/lib/ai/client";
 import { ResumeContentSchema } from "@/types/resume";
+import { checkUsageLimit } from "@/lib/limits";
+import { incrementResumes, currentPeriod } from "@/lib/db/usage";
 
 async function getSystemPrompt(): Promise<string> {
   return fs.readFile(path.join(process.cwd(), "prompts", "resume-generate.md"), "utf-8");
@@ -20,6 +22,22 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const period = currentPeriod();
+
+  // Free-tier gate: enforce resumes_per_month limit
+  const { allowed, remaining } = await checkUsageLimit(supabase, user.id, "resumes", period);
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error: "free_tier_limit",
+        message:
+          "You have reached the free tier limit of 3 generated resumes per month. Upgrade to generate more.",
+        remaining: 0,
+      },
+      { status: 429 }
+    );
   }
 
   const profile = await getGitHubProfile(supabase, user.id);
@@ -60,7 +78,10 @@ export async function POST(request: NextRequest) {
 
     const { id: resume_id } = await createResume(supabase, user.id, content);
 
-    return NextResponse.json({ resume_id, content });
+    // Increment counter only after successful generation
+    await incrementResumes(supabase, user.id, period);
+
+    return NextResponse.json({ resume_id, content, remaining: remaining - 1 });
   } catch (err) {
     if (err instanceof AIValidationError) {
       console.error("[resume/generate] Schema validation failed:", err.message);

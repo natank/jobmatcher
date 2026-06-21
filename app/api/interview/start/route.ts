@@ -8,7 +8,8 @@ import { getJob } from "@/lib/db/job";
 import { getGitHubProfile } from "@/lib/db/github";
 import { listResumes } from "@/lib/db/resume";
 import { createSession } from "@/lib/db/interview";
-import { getUsage, currentPeriod } from "@/lib/db/usage";
+import { currentPeriod } from "@/lib/db/usage";
+import { checkUsageLimit } from "@/lib/limits";
 import { QuestionSchema } from "@/types/interview";
 
 async function getSystemPrompt(): Promise<string> {
@@ -16,8 +17,6 @@ async function getSystemPrompt(): Promise<string> {
 }
 
 const QuestionsOutputSchema = z.array(QuestionSchema).length(5);
-
-const FREE_TIER_INTERVIEW_LIMIT = 1;
 
 export async function POST(request: NextRequest) {
   const supabase = createSupabaseServerClient();
@@ -38,19 +37,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Provide 'job_id' in the request body." }, { status: 400 });
   }
 
-  // Free-tier gate — checked at session start; counter is incremented at completion
-  if (user.user_metadata?.plan === "free" || !user.user_metadata?.plan) {
-    const usage = await getUsage(supabase, user.id, currentPeriod());
-    if (usage && usage.interviews_count >= FREE_TIER_INTERVIEW_LIMIT) {
-      return NextResponse.json(
-        {
-          error: "free_tier_limit",
-          message:
-            "You have reached the free tier limit of 1 completed interview session per month. Upgrade to run more sessions.",
-        },
-        { status: 429 }
-      );
-    }
+  // Free-tier gate — reads plan from users table (not user_metadata, which is never set).
+  // Counter is incremented at session completion (summary route), not at start.
+  const period = currentPeriod();
+  const { allowed } = await checkUsageLimit(supabase, user.id, "interviews", period);
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error: "free_tier_limit",
+        message:
+          "You have reached the free tier limit of 1 completed interview session per month. Upgrade to run more sessions.",
+      },
+      { status: 429 }
+    );
   }
 
   const jobRow = await getJob(supabase, user.id, body.job_id);
