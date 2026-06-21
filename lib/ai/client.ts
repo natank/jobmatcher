@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { type ZodType, ZodError } from "zod";
+import { estimateCost } from "./pricing";
+import { TOKEN_BUDGETS } from "./token-budgets";
 
 export class AIValidationError extends Error {
   constructor(
@@ -38,7 +40,11 @@ function extractJson(text: string): string {
 export async function callClaude<T>(opts: CallClaudeOptions<T>): Promise<T> {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const startMs = Date.now();
-  let retried = false;
+  let retryCount = 0;
+
+  // Resolve max_tokens: explicit > budget constant > SDK default
+  const budget = TOKEN_BUDGETS[opts.feature];
+  const maxTokens = opts.maxTokens ?? budget?.maxOutputTokens ?? 4096;
 
   async function tryOnce(): Promise<T> {
     const controller = new AbortController();
@@ -47,7 +53,7 @@ export async function callClaude<T>(opts: CallClaudeOptions<T>): Promise<T> {
       const response = await anthropic.messages.create(
         {
           model: MODEL,
-          max_tokens: opts.maxTokens ?? 4096,
+          max_tokens: maxTokens,
           temperature: opts.temperature ?? 0,
           system: opts.systemPrompt,
           messages: [{ role: "user", content: opts.userMessage }],
@@ -57,13 +63,20 @@ export async function callClaude<T>(opts: CallClaudeOptions<T>): Promise<T> {
       const text = response.content[0]?.type === "text" ? response.content[0].text : "";
       const raw: unknown = JSON.parse(extractJson(text));
       const data = opts.schema.parse(raw);
+      const durationMs = Date.now() - startMs;
+      const inputTokens = response.usage.input_tokens;
+      const outputTokens = response.usage.output_tokens;
       console.log(
         JSON.stringify({
+          event: "ai_call",
           feature: opts.feature,
-          inputTokens: response.usage.input_tokens,
-          outputTokens: response.usage.output_tokens,
-          latencyMs: Date.now() - startMs,
-          retried,
+          model: MODEL,
+          inputTokens,
+          outputTokens,
+          costEstimateUsd: estimateCost(MODEL, inputTokens, outputTokens),
+          durationMs,
+          retryCount,
+          success: true,
         })
       );
       return data;
@@ -81,24 +94,31 @@ export async function callClaude<T>(opts: CallClaudeOptions<T>): Promise<T> {
     if (!isRetryable) {
       console.error(
         JSON.stringify({
+          event: "ai_call",
           feature: opts.feature,
-          latencyMs: Date.now() - startMs,
+          model: MODEL,
+          durationMs: Date.now() - startMs,
+          retryCount: 0,
+          success: false,
           error: String(firstErr),
         })
       );
       throw firstErr;
     }
 
-    retried = true;
+    retryCount = 1;
 
     try {
       return await tryOnce();
     } catch (secondErr) {
       console.error(
         JSON.stringify({
+          event: "ai_call",
           feature: opts.feature,
-          latencyMs: Date.now() - startMs,
-          retried: true,
+          model: MODEL,
+          durationMs: Date.now() - startMs,
+          retryCount: 1,
+          success: false,
           error: String(secondErr),
         })
       );

@@ -11,10 +11,10 @@ type TestOutput = z.infer<typeof TestSchema>;
 
 const VALID_OUTPUT: TestOutput = { name: "hello", value: 42 };
 
-function makeClaudeResponse(text: string) {
+function makeClaudeResponse(text: string, inputTokens = 10, outputTokens = 20) {
   return {
     content: [{ type: "text", text }],
-    usage: { input_tokens: 10, output_tokens: 20 },
+    usage: { input_tokens: inputTokens, output_tokens: outputTokens },
   };
 }
 
@@ -64,6 +64,106 @@ describe("callClaude", () => {
       expect(params.messages[0].content).toBe(BASE_OPTS.userMessage);
       expect(params.max_tokens).toBe(1024);
       expect(params.temperature).toBe(0.5);
+    });
+  });
+
+  describe("structured log output", () => {
+    it("emits all required fields on success", async () => {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      mockCreate.mockResolvedValue(makeClaudeResponse(JSON.stringify(VALID_OUTPUT), 1240, 890));
+
+      await callClaude(BASE_OPTS);
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const logged = JSON.parse(logSpy.mock.calls[0][0] as string);
+      expect(logged.event).toBe("ai_call");
+      expect(logged.feature).toBe("test");
+      expect(logged.model).toBe("claude-sonnet-4-5");
+      expect(logged.inputTokens).toBe(1240);
+      expect(logged.outputTokens).toBe(890);
+      expect(typeof logged.costEstimateUsd).toBe("number");
+      expect(logged.costEstimateUsd).toBeGreaterThan(0);
+      expect(typeof logged.durationMs).toBe("number");
+      expect(logged.retryCount).toBe(0);
+      expect(logged.success).toBe(true);
+
+      logSpy.mockRestore();
+    });
+
+    it("emits retryCount = 1 after a transient error is retried successfully", async () => {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const serverErr = Object.assign(new Error("Internal Server Error"), { status: 500 });
+      mockCreate
+        .mockRejectedValueOnce(serverErr)
+        .mockResolvedValueOnce(makeClaudeResponse(JSON.stringify(VALID_OUTPUT)));
+
+      await callClaude(BASE_OPTS);
+
+      const logged = JSON.parse(logSpy.mock.calls[0][0] as string);
+      expect(logged.retryCount).toBe(1);
+      expect(logged.success).toBe(true);
+
+      logSpy.mockRestore();
+    });
+
+    it("emits success: false and error field on non-retryable failure", async () => {
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const clientErr = Object.assign(new Error("Bad Request"), { status: 400 });
+      mockCreate.mockRejectedValue(clientErr);
+
+      await callClaude(BASE_OPTS).catch(() => {});
+
+      const logged = JSON.parse(errSpy.mock.calls[0][0] as string);
+      expect(logged.event).toBe("ai_call");
+      expect(logged.success).toBe(false);
+      expect(logged.retryCount).toBe(0);
+      expect(logged.error).toContain("Bad Request");
+
+      errSpy.mockRestore();
+    });
+
+    it("emits success: false and retryCount: 1 after exhausting retries", async () => {
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const serverErr = Object.assign(new Error("Gateway Timeout"), { status: 504 });
+      mockCreate.mockRejectedValue(serverErr);
+
+      await callClaude(BASE_OPTS).catch(() => {});
+
+      const logged = JSON.parse(errSpy.mock.calls[0][0] as string);
+      expect(logged.success).toBe(false);
+      expect(logged.retryCount).toBe(1);
+
+      errSpy.mockRestore();
+    });
+  });
+
+  describe("token budget application", () => {
+    it("uses max_tokens from TOKEN_BUDGETS when feature matches", async () => {
+      mockCreate.mockResolvedValue(makeClaudeResponse(JSON.stringify(VALID_OUTPUT)));
+
+      // "resume-generate" budget has maxOutputTokens: 4000
+      await callClaude({ ...BASE_OPTS, feature: "resume-generate" });
+
+      const [params] = mockCreate.mock.calls[0];
+      expect(params.max_tokens).toBe(4_000);
+    });
+
+    it("prefers explicit maxTokens over budget constant", async () => {
+      mockCreate.mockResolvedValue(makeClaudeResponse(JSON.stringify(VALID_OUTPUT)));
+
+      await callClaude({ ...BASE_OPTS, feature: "resume-generate", maxTokens: 512 });
+
+      const [params] = mockCreate.mock.calls[0];
+      expect(params.max_tokens).toBe(512);
+    });
+
+    it("falls back to 4096 for unknown feature keys", async () => {
+      mockCreate.mockResolvedValue(makeClaudeResponse(JSON.stringify(VALID_OUTPUT)));
+
+      await callClaude({ ...BASE_OPTS, feature: "unknown-feature" });
+
+      const [params] = mockCreate.mock.calls[0];
+      expect(params.max_tokens).toBe(4096);
     });
   });
 
