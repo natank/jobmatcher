@@ -119,7 +119,7 @@ Pure TypeScript library code — no routes, no UI. Dependency of all subsequent 
 
 ---
 
-### PR 4 — Session Summary Route + Prompt
+### PR 4 — Session Summary Route + Prompt **COMPLETE**
 
 **Steps:** 5 (session summary)
 
@@ -135,7 +135,7 @@ Pure TypeScript library code — no routes, no UI. Dependency of all subsequent 
 
 ---
 
-### PR 5 — Interview UI
+### PR 5 — Interview UI **COMPLETE**
 
 **Steps:** 6 (UI pages)
 
