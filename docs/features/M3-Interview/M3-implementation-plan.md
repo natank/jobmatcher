@@ -87,7 +87,7 @@ Pure TypeScript library code — no routes, no UI. Dependency of all subsequent 
 
 ---
 
-### PR 2 — Question Generation Route + Prompt
+### PR 2 — Question Generation Route + Prompt **COMPLETE**
 
 **Steps:** 3 (question generation)
 
@@ -103,7 +103,7 @@ Pure TypeScript library code — no routes, no UI. Dependency of all subsequent 
 
 ---
 
-### PR 3 — Answer Feedback Route + Prompt
+### PR 3 — Answer Feedback Route + Prompt **COMPLETE**
 
 **Steps:** 4 (per-answer scoring)
 
