@@ -6,8 +6,11 @@ import { createSupabaseServerClient } from "@/lib/db/client";
 import { getJob } from "@/lib/db/job";
 import { listResumes } from "@/lib/db/resume";
 import { getFitResultByJobResume } from "@/lib/db/fit";
+import { getGitHubProfile } from "@/lib/db/github";
+import { listSessionsByJob } from "@/lib/db/interview";
 import { FitScoreCard } from "./FitScoreCard";
 import { TailoredResumePanel } from "./TailoredResumePanel";
+import { InterviewPanel } from "./InterviewPanel";
 
 const SENIORITY_LABELS: Record<string, string> = {
   junior: "Junior",
@@ -23,9 +26,11 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
   const supabase = createSupabaseServerClient();
 
-  const [jobRow, resumes] = await Promise.all([
+  const [jobRow, resumes, githubProfile, sessions] = await Promise.all([
     getJob(supabase, user.id, params.id).catch(() => null),
     listResumes(supabase, user.id).catch(() => []),
+    getGitHubProfile(supabase, user.id).catch(() => null),
+    listSessionsByJob(supabase, user.id, params.id).catch(() => []),
   ]);
 
   if (!jobRow) redirect("/dashboard");
@@ -176,6 +181,13 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           <FitScoreCard jobId={params.id} initialFit={fitResult} latestResume={latestResume} />
           <TailoredResumePanel jobId={params.id} latestResume={latestResume} fitId={fitId} />
         </div>
+
+        {/* Interview panel */}
+        <InterviewPanel
+          jobId={params.id}
+          hasGitHubProfile={githubProfile !== null}
+          initialSessions={sessions}
+        />
       </main>
     </div>
   );
