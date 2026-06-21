@@ -4,6 +4,8 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db/client");
 vi.mock("@/lib/db/github");
 vi.mock("@/lib/db/resume");
+vi.mock("@/lib/db/usage");
+vi.mock("@/lib/limits");
 vi.mock("@/lib/ai/client");
 vi.mock("node:fs/promises");
 
@@ -11,6 +13,8 @@ import { POST } from "./route";
 import * as dbClient from "@/lib/db/client";
 import * as dbGithub from "@/lib/db/github";
 import * as dbResume from "@/lib/db/resume";
+import * as dbUsage from "@/lib/db/usage";
+import * as limits from "@/lib/limits";
 import * as aiClient from "@/lib/ai/client";
 import * as fs from "node:fs/promises";
 import type { GitHubProfile } from "@/types/github";
@@ -66,6 +70,10 @@ describe("POST /api/resume/generate", () => {
     );
     vi.mocked(dbGithub.getGitHubProfile).mockResolvedValue(MOCK_PROFILE);
     vi.mocked(dbResume.createResume).mockResolvedValue({ id: "resume-123" });
+    vi.mocked(dbUsage.currentPeriod).mockReturnValue("2024-01");
+    vi.mocked(dbUsage.incrementResumes).mockResolvedValue(undefined);
+    // Default: within limit
+    vi.mocked(limits.checkUsageLimit).mockResolvedValue({ allowed: true, remaining: 2 });
     vi.mocked(aiClient.callClaude).mockResolvedValue(MOCK_CONTENT);
     vi.mocked(fs.readFile).mockResolvedValue("system prompt content" as never);
   });
@@ -82,6 +90,39 @@ describe("POST /api/resume/generate", () => {
     expect(body.error).toBe("Unauthorized");
   });
 
+  // --- Free-tier gate ---
+
+  it("returns 429 when checkUsageLimit reports not allowed", async () => {
+    vi.mocked(limits.checkUsageLimit).mockResolvedValue({ allowed: false, remaining: 0 });
+
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.error).toBe("free_tier_limit");
+    expect(body.remaining).toBe(0);
+  });
+
+  it("calls checkUsageLimit with correct feature and period", async () => {
+    await POST(makeRequest());
+
+    expect(limits.checkUsageLimit).toHaveBeenCalledWith(
+      mockSupabase,
+      MOCK_USER.id,
+      "resumes",
+      "2024-01"
+    );
+  });
+
+  it("does not call Claude when at the limit", async () => {
+    vi.mocked(limits.checkUsageLimit).mockResolvedValue({ allowed: false, remaining: 0 });
+
+    await POST(makeRequest());
+
+    expect(aiClient.callClaude).not.toHaveBeenCalled();
+  });
+
+  // --- Resource lookup ---
+
   it("returns 400 when no GitHub profile exists", async () => {
     vi.mocked(dbGithub.getGitHubProfile).mockResolvedValue(null);
 
@@ -91,7 +132,9 @@ describe("POST /api/resume/generate", () => {
     expect(body.error).toContain("GitHub profile not found");
   });
 
-  it("happy path: calls callClaude with profile, persists, returns resume_id and content", async () => {
+  // --- Happy path ---
+
+  it("happy path: calls callClaude with profile, persists, increments counter, returns resume_id and content", async () => {
     const res = await POST(makeRequest({ target_role: "Senior Engineer" }));
 
     expect(res.status).toBe(200);
@@ -106,10 +149,21 @@ describe("POST /api/resume/generate", () => {
     );
 
     expect(dbResume.createResume).toHaveBeenCalledWith(mockSupabase, MOCK_USER.id, MOCK_CONTENT);
+    expect(dbUsage.incrementResumes).toHaveBeenCalledWith(mockSupabase, MOCK_USER.id, "2024-01");
 
     const body = await res.json();
     expect(body.resume_id).toBe("resume-123");
     expect(body.content).toEqual(MOCK_CONTENT);
+    // remaining decremented from 2 to 1
+    expect(body.remaining).toBe(1);
+  });
+
+  it("does NOT increment counter when Claude call fails", async () => {
+    vi.mocked(aiClient.callClaude).mockRejectedValue(new Error("Network failure"));
+
+    await POST(makeRequest());
+
+    expect(dbUsage.incrementResumes).not.toHaveBeenCalled();
   });
 
   it("includes target_languages in the user message when provided", async () => {

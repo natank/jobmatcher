@@ -94,6 +94,30 @@ export async function incrementResumes(
   }
 }
 
+/**
+ * Returns the usage row for (userId, period), creating it with all-zero counters
+ * if it does not already exist.
+ */
+export async function getOrCreateUsage(
+  supabase: Supabase,
+  userId: string,
+  period: string
+): Promise<UsageRow> {
+  const existing = await getUsage(supabase, userId, period);
+  if (existing) return existing;
+
+  const newRow = { user_id: userId, period, resumes_count: 0, interviews_count: 0 };
+  const { error } = await (
+    supabase.from("usage_counters") as unknown as {
+      insert: (row: object) => Promise<{ error: { message: string } | null }>;
+    }
+  ).insert(newRow);
+
+  if (error) throw new Error(`Failed to create usage row: ${error.message}`);
+
+  return { ...newRow } as UsageRow;
+}
+
 /** Returns the current calendar period string, e.g. "2025-07". */
 export function currentPeriod(): string {
   const now = new Date();

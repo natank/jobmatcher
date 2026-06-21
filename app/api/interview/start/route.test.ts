@@ -7,6 +7,7 @@ vi.mock("@/lib/db/github");
 vi.mock("@/lib/db/resume");
 vi.mock("@/lib/db/interview");
 vi.mock("@/lib/db/usage");
+vi.mock("@/lib/limits");
 vi.mock("@/lib/ai/client");
 vi.mock("node:fs/promises");
 
@@ -17,6 +18,7 @@ import * as dbGithub from "@/lib/db/github";
 import * as dbResume from "@/lib/db/resume";
 import * as dbInterview from "@/lib/db/interview";
 import * as dbUsage from "@/lib/db/usage";
+import * as limits from "@/lib/limits";
 import * as aiClient from "@/lib/ai/client";
 import * as fs from "node:fs/promises";
 import type { JobPosting } from "@/types/job";
@@ -28,11 +30,6 @@ import type { Question } from "@/types/interview";
 // ---------------------------------------------------------------------------
 
 const MOCK_USER = { id: "user-abc", email: "dev@example.com", user_metadata: {} };
-const MOCK_USER_FREE = {
-  id: "user-abc",
-  email: "dev@example.com",
-  user_metadata: { plan: "free" },
-};
 
 const MOCK_JOB_POSTING: JobPosting = {
   id: "job-456",
@@ -170,8 +167,9 @@ describe("POST /api/interview/start", () => {
     vi.mocked(dbGithub.getGitHubProfile).mockResolvedValue(MOCK_GITHUB_PROFILE);
     vi.mocked(dbResume.listResumes).mockResolvedValue([MOCK_RESUME_ROW as never]);
     vi.mocked(dbInterview.createSession).mockResolvedValue({ id: "session-789" });
-    vi.mocked(dbUsage.getUsage).mockResolvedValue(null);
     vi.mocked(dbUsage.currentPeriod).mockReturnValue("2024-01");
+    // Default: within limit
+    vi.mocked(limits.checkUsageLimit).mockResolvedValue({ allowed: true, remaining: 1 });
     vi.mocked(aiClient.callClaude).mockResolvedValue(MOCK_QUESTIONS);
     vi.mocked(fs.readFile).mockResolvedValue("interview questions system prompt" as never);
   });
@@ -231,19 +229,10 @@ describe("POST /api/interview/start", () => {
     expect(body.error).toContain("GitHub");
   });
 
-  // --- Free-tier gate ---
+  // --- Free-tier gate (now via checkUsageLimit) ---
 
-  it("returns 429 when free-tier user has already completed 1 session this month", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: MOCK_USER_FREE },
-      error: null,
-    });
-    vi.mocked(dbUsage.getUsage).mockResolvedValue({
-      user_id: MOCK_USER_FREE.id,
-      period: "2024-01",
-      resumes_count: 0,
-      interviews_count: 1,
-    });
+  it("returns 429 when checkUsageLimit reports not allowed", async () => {
+    vi.mocked(limits.checkUsageLimit).mockResolvedValue({ allowed: false, remaining: 0 });
 
     const res = await POST(makeRequest({ job_id: "job-456" }));
 
@@ -252,29 +241,23 @@ describe("POST /api/interview/start", () => {
     expect(body.error).toBe("free_tier_limit");
   });
 
-  it("allows free-tier user with 0 completed sessions this month to proceed", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: MOCK_USER_FREE },
-      error: null,
-    });
-    vi.mocked(dbUsage.getUsage).mockResolvedValue({
-      user_id: MOCK_USER_FREE.id,
-      period: "2024-01",
-      resumes_count: 0,
-      interviews_count: 0,
-    });
+  it("allows when checkUsageLimit reports allowed", async () => {
+    vi.mocked(limits.checkUsageLimit).mockResolvedValue({ allowed: true, remaining: 1 });
 
     const res = await POST(makeRequest({ job_id: "job-456" }));
 
     expect(res.status).toBe(200);
   });
 
-  it("allows a user with no usage row to proceed", async () => {
-    vi.mocked(dbUsage.getUsage).mockResolvedValue(null);
+  it("calls checkUsageLimit with correct feature and period", async () => {
+    await POST(makeRequest({ job_id: "job-456" }));
 
-    const res = await POST(makeRequest({ job_id: "job-456" }));
-
-    expect(res.status).toBe(200);
+    expect(limits.checkUsageLimit).toHaveBeenCalledWith(
+      mockSupabase,
+      MOCK_USER.id,
+      "interviews",
+      "2024-01"
+    );
   });
 
   // --- Happy path ---
