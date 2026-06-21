@@ -10,8 +10,8 @@ _Last updated: 2026-06-19_
 | -------------------- | --------------- |
 | M0 — Foundation      | **Complete**    |
 | M1 — GitHub → Resume | **Complete**    |
-| M2 — Job & Fit       | **In Progress** |
-| M3 — Interview       | Not started     |
+| M2 — Job & Fit       | **Complete**    |
+| M3 — Interview       | **In progress** |
 | M4 — Hardening       | Not started     |
 
 ## 1. Tech Stack (confirmed)
