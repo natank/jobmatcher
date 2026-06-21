@@ -85,7 +85,7 @@ PR1: Usage Limits + Plan Gating (all routes)
 
 ---
 
-### PR 1 — Usage Limits + Free-Tier Enforcement
+### PR 1 — Usage Limits + Free-Tier Enforcement **Complete**
 
 **Steps:** 1 (config), 2 (limit enforcement)
 
@@ -127,7 +127,7 @@ export async function checkUsageLimit(
 
 ---
 
-### PR 2 — Cost Controls + Structured AI Logging
+### PR 2 — Cost Controls + Structured AI Logging **Complete**
 
 **Steps:** 3
 
