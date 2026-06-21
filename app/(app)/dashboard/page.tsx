@@ -3,9 +3,11 @@ import { getUser, signOut } from "@/lib/auth/actions";
 import { createSupabaseServerClient } from "@/lib/db/client";
 import { getGitHubProfile } from "@/lib/db/github";
 import { listResumes } from "@/lib/db/resume";
+import { listJobs } from "@/lib/db/job";
 import { Github, LogOut } from "lucide-react";
 import { GitHubSyncCard } from "./GitHubSyncCard";
 import { ResumeCard } from "./ResumeCard";
+import { JobCard } from "./JobCard";
 
 export default async function DashboardPage() {
   const user = await getUser();
@@ -17,9 +19,10 @@ export default async function DashboardPage() {
   const displayName = user.user_metadata?.full_name ?? user.user_metadata?.user_name ?? user.email;
 
   const supabase = createSupabaseServerClient();
-  const [profile, resumes] = await Promise.all([
+  const [profile, resumes, jobs] = await Promise.all([
     getGitHubProfile(supabase, user.id).catch(() => null),
     listResumes(supabase, user.id).catch(() => []),
+    listJobs(supabase, user.id).catch(() => []),
   ]);
 
   return (
@@ -49,13 +52,14 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900">Welcome, {displayName}!</h1>
           <p className="mt-1 text-slate-500">
-            Sync your GitHub profile and generate a tailored resume.
+            Sync your GitHub profile, generate a resume, and score it against job postings.
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <GitHubSyncCard initialProfile={profile} />
           <ResumeCard initialResumes={resumes} hasProfile={profile !== null} />
+          <JobCard initialJobs={jobs} />
         </div>
       </main>
     </div>
