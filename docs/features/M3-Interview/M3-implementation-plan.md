@@ -67,7 +67,7 @@ PR1: Types + DB Helpers
                  └─ PR5: Interview UI
 ```
 
-### PR 1 — Types + DB Helpers
+### PR 1 — Types + DB Helpers **COMPLETE**
 
 **Steps:** 1 (Types), 2 (DB helpers)
 
