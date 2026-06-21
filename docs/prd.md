@@ -1,11 +1,13 @@
 # JobMatcher
+
 ## AI-Powered Job Search SaaS
+
 ### Product Requirements Document | v0.2
 
-| Version | Status | Owner | Date |
-|---------|--------|-------|------|
-| v0.1 | Superseded | Natan | May 2026 |
-| v0.2 | Active | Natan | Jun 2026 |
+| Version | Status     | Owner | Date     |
+| ------- | ---------- | ----- | -------- |
+| v0.1    | Superseded | Natan | May 2026 |
+| v0.2    | Active     | Natan | Jun 2026 |
 
 ---
 
@@ -47,18 +49,18 @@ JobMatcher is a SaaS platform that automates the end-to-end job search workflow.
 
 ## 3. Core Features — MVP Scope
 
-| Module | Description | Priority |
-|--------|-------------|----------|
-| GitHub Ingestion | OAuth GitHub login, read repos/commits/languages, extract contribution signals | 🔴 MVP |
-| Resume Generator | AI-built resume from GitHub data + user-provided context (role, experience) | 🔴 MVP |
-| Job Ingestion | Paste job URL or description text; AI parses requirements and keywords | 🔴 MVP |
-| Fit Score | 1–5 score matching resume signals to job requirements with gap analysis | 🔴 MVP |
-| Resume Tailoring | Auto-adapt resume sections to highlight relevant projects for each job | 🔴 MVP |
-| Mock Interview | Text-based AI interview using job description + candidate's GitHub context | 🔴 MVP |
-| Interview Feedback | Per-answer scoring: relevance, depth, clarity. Summary report after session | 🔴 MVP |
-| Job Tracker | Dashboard to track applications, scores, and interview sessions | 🟡 v1.1 |
-| Company Scan | Auto-scrape job boards for new openings matching user profile | 🟡 v1.1 |
-| Voice Interview | Upgrade text mock interview to voice-based interaction | 🔵 v2.0 |
+| Module             | Description                                                                    | Priority |
+| ------------------ | ------------------------------------------------------------------------------ | -------- |
+| GitHub Ingestion   | OAuth GitHub login, read repos/commits/languages, extract contribution signals | 🔴 MVP   |
+| Resume Generator   | AI-built resume from GitHub data + user-provided context (role, experience)    | 🔴 MVP   |
+| Job Ingestion      | Paste job URL or description text; AI parses requirements and keywords         | 🔴 MVP   |
+| Fit Score          | 1–5 score matching resume signals to job requirements with gap analysis        | 🔴 MVP   |
+| Resume Tailoring   | Auto-adapt resume sections to highlight relevant projects for each job         | 🔴 MVP   |
+| Mock Interview     | Text-based AI interview using job description + candidate's GitHub context     | 🔴 MVP   |
+| Interview Feedback | Per-answer scoring: relevance, depth, clarity. Summary report after session    | 🔴 MVP   |
+| Job Tracker        | Dashboard to track applications, scores, and interview sessions                | 🟡 v1.1  |
+| Company Scan       | Auto-scrape job boards for new openings matching user profile                  | 🟡 v1.1  |
+| Voice Interview    | Upgrade text mock interview to voice-based interaction                         | 🔵 v2.0  |
 
 ---
 
@@ -78,22 +80,26 @@ JobMatcher is a SaaS platform that automates the end-to-end job search workflow.
 ## 5. Technical Architecture
 
 ### Frontend
+
 - React + TypeScript + Tailwind CSS
 - Vercel deployment
 - Component library: shadcn/ui
 
 ### Backend
+
 - Next.js 14 API routes (App Router route handlers + server actions)
 - GitHub OAuth via **Supabase Auth (GitHub provider)** — locked in v0.2
 - GitHub REST API v3 for repo/commit ingestion
 
 ### AI Layer
+
 - Claude API (claude-sonnet-4) as primary AI engine
 - Structured system prompts per feature (resume, interview, scoring)
 - Engineering docs injected as context into each AI session
 - Prompt versioning maintained in `/prompts` directory
 
 ### Data
+
 - Supabase (PostgreSQL + Auth + Storage)
 - Tables: `users`, `github_profiles`, `resumes`, `jobs`, `interview_sessions`, `answers`
 
@@ -122,11 +128,11 @@ All AI features are powered by context-rich prompts. Engineering documents (this
 
 ## 7. Monetization Model
 
-| Tier | Features | Price |
-|------|----------|-------|
-| Free | GitHub connect, 1 resume, 1 mock interview / month | $0 |
-| Pro | Unlimited resumes, 10 interviews/month, fit scoring, export PDF | $15/month |
-| Power | Unlimited everything, company scan, priority AI, API access | $29/month |
+| Tier  | Features                                                        | Price     |
+| ----- | --------------------------------------------------------------- | --------- |
+| Free  | GitHub connect, 1 resume, 1 mock interview / month              | $0        |
+| Pro   | Unlimited resumes, 10 interviews/month, fit scoring, export PDF | $15/month |
+| Power | Unlimited everything, company scan, priority AI, API access     | $29/month |
 
 ---
 
@@ -144,29 +150,29 @@ All AI features are powered by context-rich prompts. Engineering documents (this
 
 All open questions from v0.1 are resolved for MVP:
 
-| Decision | Resolution | Deferred |
-|----------|-----------|---------|
-| GitHub repo access | **Public repos only** (scopes: `read:user`, `user:email`, `public_repo`) | Private opt-in post-MVP |
-| Resume export format | **PDF only** (server-rendered from schema) | DOCX in v1.1 |
-| Interview session length | **Fixed 5 questions** (2 technical, 2 job-req, 1 behavioral) | Variable length post-MVP |
-| Onboarding flow | **GitHub-first** | Manual paste entry post-MVP |
-| Language support | **English-only** | Hebrew in v1.1 |
-| Auth library | **Supabase Auth with GitHub OAuth provider** | — |
+| Decision                 | Resolution                                                               | Deferred                    |
+| ------------------------ | ------------------------------------------------------------------------ | --------------------------- |
+| GitHub repo access       | **Public repos only** (scopes: `read:user`, `user:email`, `public_repo`) | Private opt-in post-MVP     |
+| Resume export format     | **PDF only** (server-rendered from schema)                               | DOCX in v1.1                |
+| Interview session length | **Fixed 5 questions** (2 technical, 2 job-req, 1 behavioral)             | Variable length post-MVP    |
+| Onboarding flow          | **GitHub-first**                                                         | Manual paste entry post-MVP |
+| Language support         | **English-only**                                                         | Hebrew in v1.1              |
+| Auth library             | **Supabase Auth with GitHub OAuth provider**                             | —                           |
 
 ---
 
 ## 10. Non-Functional Requirements
 
-| NFR | MVP Target |
-|-----|-----------|
-| API latency (non-AI) | p95 < 400 ms |
-| AI feature latency | p95 < 12 s |
-| Availability | 99% (best-effort) |
-| AI timeout | 30 s, 1 retry |
-| Max job text input | 12 KB |
-| Max interview answer | 4 KB |
+| NFR                   | MVP Target                       |
+| --------------------- | -------------------------------- |
+| API latency (non-AI)  | p95 < 400 ms                     |
+| AI feature latency    | p95 < 12 s                       |
+| Availability          | 99% (best-effort)                |
+| AI timeout            | 30 s, 1 retry                    |
+| Max job text input    | 12 KB                            |
+| Max interview answer  | 4 KB                             |
 | Token budget per call | Enforced per-feature (see specs) |
-| Data deletion | Full user purge within request |
+| Data deletion         | Full user purge within request   |
 
 ---
 
@@ -185,13 +191,13 @@ All open questions from v0.1 are resolved for MVP:
 
 **North Star**: % of new users who complete the full core flow (GitHub connect → resume generated → job pasted → interview completed) within first session.
 
-| Metric | Target (90 days post-launch) |
-|--------|------------------------------|
-| Core flow completion rate | ≥ 25% of signups |
-| Resume generation success rate | ≥ 90% (no schema validation failure) |
-| Mock interview completion rate | ≥ 60% of started sessions |
-| Free → Pro conversion | ≥ 5% |
-| AI error rate (timeout/schema fail) | < 5% |
+| Metric                              | Target (90 days post-launch)         |
+| ----------------------------------- | ------------------------------------ |
+| Core flow completion rate           | ≥ 25% of signups                     |
+| Resume generation success rate      | ≥ 90% (no schema validation failure) |
+| Mock interview completion rate      | ≥ 60% of started sessions            |
+| Free → Pro conversion               | ≥ 5%                                 |
+| AI error rate (timeout/schema fail) | < 5%                                 |
 
 ---
 

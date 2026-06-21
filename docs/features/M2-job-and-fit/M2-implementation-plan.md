@@ -59,7 +59,7 @@ PR1: Types + Skill Canonicalization + DB Helpers
                  └─ PR5: Job & Fit UI
 ```
 
-### PR 1 — Types + Skill Canonicalization + DB Helpers
+### PR 1 — Types + Skill Canonicalization + DB Helpers **COMPLETE**
 
 **Steps:** 1 (Types), 2 (Canonicalization), 4 (DB job helpers), 7 (DB fit helpers)
 
@@ -78,7 +78,7 @@ Pure TypeScript library code — no routes, no UI. Dependency of all subsequent 
 
 ---
 
-### PR 2 — Job Parse Route + Prompt
+### PR 2 — Job Parse Route + Prompt **COMPLETE**
 
 **Steps:** 3 (Job parse API route)
 
@@ -94,7 +94,7 @@ Pure TypeScript library code — no routes, no UI. Dependency of all subsequent 
 
 ---
 
-### PR 3 — Fit Score Library + Route
+### PR 3 — Fit Score Library + Route **COMPLETE**
 
 **Steps:** 5 (deterministic fit scoring), 6 (fit score API route)
 
